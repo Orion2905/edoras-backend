@@ -43,10 +43,18 @@ jobs:
           find . -name "*.pyc" -delete
           find . -name "__pycache__" -type d -exec rm -rf {} + || true
           
-          # Ensure startup.txt is included
-          if [ ! -f startup.txt ]; then
-            echo "gunicorn --bind=0.0.0.0 --timeout 600 --workers 4 app:app" > startup.txt
-          fi
+          # Create/update startup.txt for Azure App Service
+          echo "gunicorn --bind=0.0.0.0:8000 --timeout 600 --workers 4 --access-logfile '-' --error-logfile '-' app:app" > startup.txt
+          
+          # Verify startup.txt exists and show its content
+          echo "=== startup.txt content ==="
+          cat startup.txt
+          echo "=========================="
+          
+          # List files to ensure startup.txt is in package
+          echo "=== Package files ==="
+          ls -la
+          echo "===================="
 
       - name: Upload artifact for deployment jobs
         uses: actions/upload-artifact@v4
@@ -60,6 +68,7 @@ jobs:
             !.git/
             !.pytest_cache/
             !node_modules/
+            !web.config
 
   deploy:
     runs-on: ubuntu-latest
@@ -87,5 +96,4 @@ jobs:
         with:
           app-name: 'edoras-backend-api'
           slot-name: 'Production'
-          startup-command: 'gunicorn --bind=0.0.0.0 --timeout 600 --workers 4 app:app'
           
