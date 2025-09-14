@@ -43,15 +43,10 @@ jobs:
           find . -name "*.pyc" -delete
           find . -name "__pycache__" -type d -exec rm -rf {} + || true
           
-          # List files to ensure proper package structure
-          echo "=== Package contents ==="
-          ls -la
-          echo "========================"
-          
-          # Verify Python files
-          echo "=== Python files ==="
-          find . -name "*.py" -type f | head -10
-          echo "===================="
+          # Ensure startup.txt is included
+          if [ ! -f startup.txt ]; then
+            echo "gunicorn --bind=0.0.0.0 --timeout 600 --workers 4 app:app" > startup.txt
+          fi
 
       - name: Upload artifact for deployment jobs
         uses: actions/upload-artifact@v4
@@ -65,8 +60,6 @@ jobs:
             !.git/
             !.pytest_cache/
             !node_modules/
-            !web.config
-            !startup.txt
 
   deploy:
     runs-on: ubuntu-latest
@@ -94,5 +87,5 @@ jobs:
         with:
           app-name: 'edoras-backend-api'
           slot-name: 'Production'
-          startup-command: 'gunicorn --bind=0.0.0.0:8000 --timeout 600 --workers 4 --access-logfile "-" --error-logfile "-" app:app'
+          startup-command: 'gunicorn --bind=0.0.0.0 --timeout 600 --workers 4 app:app'
           
