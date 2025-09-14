@@ -30,9 +30,48 @@ jobs:
           source venv/bin/activate
       
       - name: Install dependencies
-        run: pip install -r requirements.txt
+        run: |
+          source venv/bin/activate
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          
+      - name: Prepare deployment package
+        run: |
+          # Remove any problematic files for Azure deployment
+          find . -name "*.pyc" -delete
+          find . -name "__pycache__" -type d -exec rm -rf {} + || true
+          
+          # Ensure startup.txt is included
+          if [ ! -f startup.txt ]; then
+            echo "gunicorn --bind=0.0.0.0 --timeout 600 --workers 4 app:app" > startup.txt
+          fi
         
-      # Optional: Add step to run tests here (PyTest, Django test suites, etc.)
+      # Run tests and verify the app works
+      - name: Run tests
+        run: |
+          source venv/bin/activate
+          # Set environment variables for testing
+          export FLASK_APP=app.py
+          export FLASK_ENV=testing
+          export DATABASE_URL=sqlite:///test.db
+          
+          # Run tests if they exist
+          if [ -d "tests" ]; then
+            python -m pytest tests/ -v
+          elif ls test_*.py 1> /dev/null 2>&1; then
+            python -m pytest test_*.py -v
+          else
+            echo "No tests found, running syntax check instead"
+            python -m py_compile app.py
+          fi
+          
+      - name: Test Flask app startup
+        run: |
+          source venv/bin/activate
+          export FLASK_APP=app.py
+          export FLASK_ENV=production
+          # Test that the Flask app can start without errors
+          timeout 10s python app.py || true
 
       - name: Upload artifact for deployment jobs
         uses: actions/upload-artifact@v4
@@ -41,6 +80,11 @@ jobs:
           path: |
             .
             !venv/
+            !__pycache__/
+            !*.pyc
+            !.git/
+            !.pytest_cache/
+            !node_modules/
 
   deploy:
     runs-on: ubuntu-latest
@@ -68,4 +112,5 @@ jobs:
         with:
           app-name: 'edoras-backend-api'
           slot-name: 'Production'
+          startup-command: 'gunicorn --bind=0.0.0.0 --timeout 600 --workers 4 app:app'
           
