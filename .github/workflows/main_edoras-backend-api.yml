@@ -36,6 +36,8 @@ jobs:
           pip install -r requirements.txt
           # Install dev dependencies for testing
           if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
+          # Verify installations
+          pip list
           
       - name: Prepare deployment package
         run: |
