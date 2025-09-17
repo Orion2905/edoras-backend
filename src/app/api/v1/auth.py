@@ -55,8 +55,8 @@ def register():
     user.save()
     
     # Crea token di accesso
-    access_token = create_access_token(identity=user)
-    refresh_token = create_refresh_token(identity=user)
+    access_token = create_access_token(identity=user.id)
+    refresh_token = create_refresh_token(identity=user.id)
     
     return jsonify({
         'message': 'User registered successfully',
@@ -97,8 +97,8 @@ def login():
     user.update_last_login()
     
     # Crea token di accesso
-    access_token = create_access_token(identity=user)
-    refresh_token = create_refresh_token(identity=user)
+    access_token = create_access_token(identity=user.id)
+    refresh_token = create_refresh_token(identity=user.id)
     
     return jsonify({
         'message': 'Login successful',
