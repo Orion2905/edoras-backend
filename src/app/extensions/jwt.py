@@ -7,7 +7,7 @@ from ..extensions import jwt
 @jwt.user_identity_loader
 def user_identity_lookup(user):
     """Configura come identificare l'utente nel JWT."""
-    return user.id if hasattr(user, 'id') else user
+    return user
 
 
 @jwt.user_lookup_loader
